@@ -44,6 +44,10 @@ OUTPUT_KEYS = ("output_throughput", "output_token_throughput", "output_throughpu
 #:       the axis Hyperloom grades AgentX on today (``GRADED_INTVTY``). Hyperloom computes the
 #:       value; this script only selects which already-computed field to read.
 #:
+#:   e2e_norm_intvty_p50  ->  median of the same TTFT-inclusive rate (aiperf P50 of
+#:       e2e_output_token_throughput / map_aiperf's ``e2e_norm_intvty_p50``). Matches the
+#:       Hyperloom handoff token ``e2e_metric=e2e_norm_intvty_p50``.
+#:
 #:   p90_intvty_inferencex  ->  1000 / P90(ITL), decode only. TTFT and queue wait are OUTSIDE
 #:       the window. This is InferenceX's ``intvty`` field -- the axis its public pareto plots
 #:       as "P90 Interactivity (tok/s/user)" -- and it is derived here exactly as InferenceX's
@@ -56,11 +60,13 @@ OUTPUT_KEYS = ("output_throughput", "output_token_throughput", "output_throughpu
 #: Hyperloom's KEEP gate cannot drift apart in the interim. When it lands, the handoff selects
 #: the new token and nothing in this file has to change.
 INTVTY_KEYS = ("e2e_norm_intvty_p90",)
+INTVTY_P50_KEYS = ("e2e_norm_intvty_p50",)
 P90_INTVTY_KEYS = ("p90_tpot_ms", "tpot_p90_ms")
 
 OUTPUT_BASIS = "aggregate_output_tok_s"
 TOTAL_BASIS = "aggregate_total_token_tok_s"
 INTVTY_BASIS = "e2e_norm_intvty_p90"
+INTVTY_P50_BASIS = "e2e_norm_intvty_p50"
 P90_INTVTY_BASIS = "p90_intvty_inferencex"
 
 
@@ -81,12 +87,13 @@ _BASES = {
     "intvty": (INTVTY_KEYS, INTVTY_BASIS, None),
     "interactivity": (INTVTY_KEYS, INTVTY_BASIS, None),
     "e2e_norm_intvty_p90": (INTVTY_KEYS, INTVTY_BASIS, None),
+    "e2e_norm_intvty_p50": (INTVTY_P50_KEYS, INTVTY_P50_BASIS, None),
     "p90_intvty_inferencex": (P90_INTVTY_KEYS, P90_INTVTY_BASIS, _recip_ms_to_rate),
 }
 
 #: The axes that measure interactivity rather than throughput. They carry the total-throughput
 #: guard, and their ``throughput_tok_s_median`` is not a tok/s figure.
-_INTVTY_BASES = frozenset({INTVTY_BASIS, P90_INTVTY_BASIS})
+_INTVTY_BASES = frozenset({INTVTY_BASIS, INTVTY_P50_BASIS, P90_INTVTY_BASIS})
 
 
 def _basis():

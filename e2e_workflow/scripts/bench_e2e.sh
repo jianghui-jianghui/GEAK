@@ -414,10 +414,17 @@ PORT_BASE=${PORT_BASE:-30000}
 PORT_SPAN=${PORT_SPAN:-1000}
 PORT_ENFORCE_RANGE=${PORT_ENFORCE_RANGE:-1}
 PORT=${PORT:-}
-if [ -n "$PORT" ] && [ "$PORT_ENFORCE_RANGE" = "1" ]; then
+# REUSE_SERVER=1: the warm server already owns HOST:PORT (e.g. AgentX Magpie on :8800).
+# Clamping into the 30xxx window would point the client at an empty port and fail health.
+if [ -n "$PORT" ] && [ "$PORT_ENFORCE_RANGE" = "1" ] && [ "${REUSE_SERVER:-0}" != "1" ]; then
   if [ "$PORT" -lt "$PORT_BASE" ] || [ "$PORT" -ge "$((PORT_BASE+PORT_SPAN))" ] 2>/dev/null; then
     echo "!!! PORT=$PORT outside required window ${PORT_BASE}..$((PORT_BASE+PORT_SPAN-1)); ignoring + auto-allocating in range."
     PORT=""
+  fi
+fi
+if [ -n "$PORT" ] && [ "${REUSE_SERVER:-0}" = "1" ] && [ "$PORT_ENFORCE_RANGE" = "1" ]; then
+  if [ "$PORT" -lt "$PORT_BASE" ] || [ "$PORT" -ge "$((PORT_BASE+PORT_SPAN))" ] 2>/dev/null; then
+    echo ">>> REUSE_SERVER=1: keeping PORT=$PORT outside ${PORT_BASE}..$((PORT_BASE+PORT_SPAN-1)) (warm server address)."
   fi
 fi
 if [ -z "$PORT" ]; then

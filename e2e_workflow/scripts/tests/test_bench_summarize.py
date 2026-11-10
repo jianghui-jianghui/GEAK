@@ -78,6 +78,8 @@ class FromRunsTest(unittest.TestCase):
                 fh.write(json.dumps({"output_throughput": t,
                                      "total_token_throughput": t * 9,
                                      "e2e_norm_intvty_p90": t / 2,
+                                     # Distinct from p90 so a p50 axis cannot silently read p90.
+                                     "e2e_norm_intvty_p50": t / 1.5,
                                      "median_ttft_ms": 40.0 + i,
                                      "median_tpot_ms": 8.0 + i,
                                      # Deliberately unrelated to e2e_norm_intvty_p90 above, so a
@@ -174,6 +176,16 @@ class FromRunsTest(unittest.TestCase):
         self.assertIsNone(s["output_throughput_tok_s_median"])
         self.assertIsNone(s["output_throughput_tok_s_spread_pct"])
         self.assertIn("e2e_norm_intvty_p90=52.5", line)
+
+    def test_e2e_norm_intvty_p50_axis(self):
+        """Hyperloom handoff e2e_metric=e2e_norm_intvty_p50 must be a first-class axis."""
+        s, line = self.summarize([100.0, 110.0], env={"E2E_METRIC": "e2e_norm_intvty_p50"})
+        self.assertEqual(s["metric_basis"], "e2e_norm_intvty_p50")
+        # write_runs stores t/1.5 -> median(100/1.5, 110/1.5) = 70.0
+        self.assertEqual(s["throughput_tok_s_median"], 70.0)
+        self.assertIsNone(s["output_throughput_tok_s_median"])
+        self.assertIn("e2e_norm_intvty_p50=70.0", line)
+        self.assertEqual(s["guard_total_tok_s_median"], 945.0)
 
     def test_intvty_metric_carries_the_throughput_guard(self):
         """Interactivity bought by shedding throughput is not a win; the guard must be readable."""
